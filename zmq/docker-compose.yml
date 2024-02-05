@@ -1,0 +1,38 @@
+# define containers for master and minion
+version: '3'
+services:
+  base:
+    image: base
+    build: "."
+
+  worker:
+    build: "./worker"
+    image: worker
+    stdin_open: true
+    tty: true
+    environment:
+      - ZMQ_SUBSCRIBE_ADDRESS=tcp://master:5559
+      - ZMQ_PUBLISH_ADDRESS=tcp://master:5560
+      - REST_API_PORT=5200
+    ports:
+      - "5200:5200"
+    working_dir: /app
+    command: ["python", "worker.py"]
+    depends_on:
+      - base
+
+  master:
+    build: "./master"
+    image: master
+    stdin_open: true
+    tty: true
+    environment:
+      - ZMQ_PUBLISH_ADDRESS=tcp://*:5559
+      - ZMQ_SUBSCRIBE_ADDRESS=tcp://*:5560
+      - REST_API_PORT=5000
+    working_dir: /app
+    ports:
+      - "5000:5000"
+    command: ["python", "master.py"]
+    depends_on:
+      - worker
